@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" href="/home/tomer/PycharmProjects/S&P500/static/css/main.css">
+</head>
+<body>
+    <div>
+        <h1>Home Page</h1>
+        <form action="#" method="post">
+            <label for="query">Choose a query:</label>
+
+            <select name="query" id="query">
+                {% for query in queries %}
+                    <option value={{query}}>{{query}}</option>
+                {% endfor %}
+            </select>
+            <br>
+            <br>
+            <label for="startdate">Start Date:</label>
+            <input type="date" id="startdate" name="startdate">
+            <br>
+            <br>
+            <label for="enddate">End Date:</label>
+            <input type="date" id="enddate" name="enddate">
+            <br>
+            <br>
+            <input type="radio" id="both" name="optionmethod" value="Both" checked>
+            <label for="both">both</label>
+            <br>
+            <input type="radio" id="call" name="optionmethod" value="Call">
+            <label for="call">call</label>
+            <br>
+            <input type="radio" id="put" name="optionmethod" value="Put">
+            <label for="put">put</label>
+            <br>
+            <br>
+            <input type="radio" id="eom" name="interval" value="Monthly" checked>
+            <label for="eom">EOM</label>
+            <br>
+            <input type="radio" id="daily" name="interval" value="Daily">
+            <label for="daily">Daily</label>
+            <br>
+            <br>
+            <input type="radio" id="allstocks" name="stocks" value="allstocks" checked>
+            <label for="allstocks">All Stocks</label>
+            <br>
+            <input type="radio" id="selected" name="stocks" value="selected">
+            <label for="selected">Selected Stocks</label>
+            <br>
+            <br>
+
+            <ul class="checkboxes">
+            {% for symbol in symbols %}
+                <label><input type="checkbox" name="my_checkbox" value={{symbol}} />{{symbol}}</label>
+            {% endfor %}
+            </ul>
+            <br>
+            <br>
+            <input type="submit" value="submit">
+        </form>
+    </div>
+</body>
+</html>
