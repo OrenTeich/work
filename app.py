@@ -4,7 +4,6 @@ from flask import Blueprint, render_template, request, send_from_directory, redi
 from stocks import symbols
 import webbrowser
 import os
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 app = Flask(__name__)
 
@@ -15,7 +14,7 @@ def ping():
 
 @app.route("/home", methods=['POST', 'GET'])
 def home():
-    print('in home')
+    # print('in home')
     from selenium import webdriver
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support.ui import WebDriverWait
@@ -24,7 +23,8 @@ def home():
 
     options = webdriver.ChromeOptions()
     options.headless = True
-    driver = webdriver.Remote("http://161.97.159.41:4444/wd/hub", DesiredCapabilities.CHROME, options=options)
+    options.gpu = False
+    driver = webdriver.Chrome(options=options)
     driver.get("http://161.97.159.41:8969/options/")
 
     saved_query = WebDriverWait(driver, 5).until(
@@ -35,7 +35,7 @@ def home():
     queries = WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.ID, r'queries'))
     )
-    
+
     sleep(0.5)
     query_list = queries.text.split('\n')
     driver.close()
@@ -60,12 +60,12 @@ def home():
         }
         print(final_query)
         foo(final_query)
-        return render_template("views.html", queries=query_list, symbols=symbols)
+        return redirect("http://10.100.102.115:7000/file/merged_file.csv")
     else:
         return render_template("views.html", queries=query_list, symbols=symbols)
 
 
-file_path = r"C:\Users\teich\OneDrive\Documents\stocks2"
+file_path = r"./stocks"
 # Check whether the specified path exists or not
 isExist = os.path.exists(file_path)
 if not isExist:
@@ -100,11 +100,10 @@ def foo(final_query):
     delete_files()
 
     chrome_options = webdriver.ChromeOptions()
-    prefs = {'download.default_directory': file_path}
+    prefs = {'download.default_directory': "C:\\Users\\User\\Documents\\work\\stocks"}
     chrome_options.add_experimental_option('prefs', prefs)
-    chrome_options.headless = True
     driver = webdriver.Chrome(options=chrome_options)
-    driver.execute_script("document.body.style.zoom='75%'")
+    driver.maximize_window()
     driver.get("http://161.97.159.41:8969/options/")
 
     if final_query["stock method"] == "selected":
@@ -119,21 +118,22 @@ def foo(final_query):
     start_date.click()
     start_date.send_keys(start_year)
     start_date.send_keys(Keys.ARROW_LEFT)
-    start_date.send_keys(start_month)
-    start_date.send_keys(Keys.ARROW_LEFT)
-    start_date.send_keys(Keys.ARROW_LEFT)
     start_date.send_keys(start_day)
+    start_date.send_keys(Keys.ARROW_LEFT)
+    start_date.send_keys(Keys.ARROW_LEFT)
+    start_date.send_keys(start_month)
 
     end_date = WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.XPATH, r'//*[@id="end_date"]'))
     )
+
     end_date.click()
     end_date.send_keys(end_year)
     end_date.send_keys(Keys.ARROW_LEFT)
-    end_date.send_keys(end_month)
-    end_date.send_keys(Keys.ARROW_LEFT)
-    end_date.send_keys(Keys.ARROW_LEFT)
     end_date.send_keys(end_day)
+    end_date.send_keys(Keys.ARROW_LEFT)
+    end_date.send_keys(Keys.ARROW_LEFT)
+    end_date.send_keys(end_month)
 
     options = [final_query["option method"]] if final_query["option method"] != "Both" else ["Call", "Put"]
     print(options)
@@ -175,7 +175,7 @@ def foo(final_query):
     sleep(5)
     for option in options:
 
-        sleep(1)
+        sleep(3)
 
         option_type = Select(WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, r'//*[@id="callPutCmb1"]'))
@@ -209,6 +209,7 @@ def foo(final_query):
 
             while True:
                 try:
+                    sleep(1)
                     driver.switch_to.alert.accept()
                     break
                 except Exception as e:
@@ -219,7 +220,9 @@ def foo(final_query):
             sleep(5)
             print("still downloading")
     sleep(3)
+    driver.close()
     merge_files(file_path)
+
 
 
 @app.route("/file/<filename>")
@@ -231,7 +234,6 @@ def merge_files(path):
     import os
     df_concat = pd.concat([pd.read_csv(os.path.join(path, f)) for f in os.listdir(path)], ignore_index=True)
     df_concat.to_csv(path + "/merged_file.csv", index=False)
-    webbrowser.open("http://127.0.0.1:5000/file/merged_file.csv")
 
 
 if __name__ == '__main__':
