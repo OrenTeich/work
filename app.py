@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, send_from_directory, redi
 from stocks import symbols
 import webbrowser
 import os
+import system
 
 app = Flask(__name__)
 
