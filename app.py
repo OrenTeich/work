@@ -14,7 +14,6 @@ def ping():
 
 @app.route("/home", methods=['POST', 'GET'])
 def home():
-    # print('in home')
     from selenium import webdriver
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support.ui import WebDriverWait
@@ -23,7 +22,6 @@ def home():
 
     options = webdriver.ChromeOptions()
     options.headless = True
-    options.gpu = False
     driver = webdriver.Chrome(options=options)
     driver.get("http://161.97.159.41:8969/options/")
 
@@ -35,9 +33,10 @@ def home():
     queries = WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.ID, r'queries'))
     )
-
+    
     sleep(0.5)
     query_list = queries.text.split('\n')
+    # sleep(10)
     driver.close()
     # query_list = ["tomer"]
     
@@ -48,7 +47,7 @@ def home():
         selected_stocks = request.form.getlist('my_checkbox')
         stock_method = request.form["stocks"]
         optionmethod = request.form["optionmethod"]
-        interval = request.form["interval"]
+        # interval = request.form["interval"]
         final_query = {
             "query": query_chosen,
             "start date": startdate,
@@ -56,16 +55,16 @@ def home():
             "stocks": selected_stocks,
             "option method": optionmethod,
             "stock method": stock_method,
-            "interval": interval
+            # "interval": interval
         }
         print(final_query)
         foo(final_query)
-        return redirect("http://10.100.102.115:7000/file/merged_file.csv")
+        return render_template("views.html", queries=query_list, symbols=symbols)
     else:
         return render_template("views.html", queries=query_list, symbols=symbols)
 
 
-file_path = r"./stocks"
+file_path = r"C:\Users\teich\OneDrive\Documents\stocks2"
 # Check whether the specified path exists or not
 isExist = os.path.exists(file_path)
 if not isExist:
@@ -75,13 +74,17 @@ if not isExist:
 
 
 
-def delete_files():
+def delete_files(del_merged=True):
     import os
     for filename in os.listdir(file_path):
         print(filename)
         file = os.path.join(file_path, filename)
         try:
-            os.remove(file)
+            if del_merged:
+                os.remove(file)
+            elif filename != "merged_file.csv":
+                os.remove(file)
+
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file, e))
 
@@ -94,17 +97,19 @@ def foo(final_query):
     from selenium.webdriver.support.ui import Select
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.action_chains import ActionChains
     from stocks import symbols
     import os
 
     delete_files()
 
     chrome_options = webdriver.ChromeOptions()
-    prefs = {'download.default_directory': "C:\\Users\\User\\Documents\\work\\stocks"}
+    prefs = {'download.default_directory': file_path}
     chrome_options.add_experimental_option('prefs', prefs)
+    chrome_options.headless = True
     driver = webdriver.Chrome(options=chrome_options)
-    driver.maximize_window()
     driver.get("http://161.97.159.41:8969/options/")
+    driver.maximize_window()
 
     if final_query["stock method"] == "selected":
         symbols = final_query["stocks"]
@@ -118,22 +123,21 @@ def foo(final_query):
     start_date.click()
     start_date.send_keys(start_year)
     start_date.send_keys(Keys.ARROW_LEFT)
-    start_date.send_keys(start_day)
-    start_date.send_keys(Keys.ARROW_LEFT)
-    start_date.send_keys(Keys.ARROW_LEFT)
     start_date.send_keys(start_month)
+    start_date.send_keys(Keys.ARROW_LEFT)
+    start_date.send_keys(Keys.ARROW_LEFT)
+    start_date.send_keys(start_day)
 
     end_date = WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.XPATH, r'//*[@id="end_date"]'))
     )
-
     end_date.click()
     end_date.send_keys(end_year)
     end_date.send_keys(Keys.ARROW_LEFT)
-    end_date.send_keys(end_day)
-    end_date.send_keys(Keys.ARROW_LEFT)
-    end_date.send_keys(Keys.ARROW_LEFT)
     end_date.send_keys(end_month)
+    end_date.send_keys(Keys.ARROW_LEFT)
+    end_date.send_keys(Keys.ARROW_LEFT)
+    end_date.send_keys(end_day)
 
     options = [final_query["option method"]] if final_query["option method"] != "Both" else ["Call", "Put"]
     print(options)
@@ -142,40 +146,34 @@ def foo(final_query):
         EC.presence_of_element_located((By.XPATH, r'//*[@id="dataDiv_1"]/input[1]'))
     )
 
-    saved_queries_button = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.XPATH, r'//*[@id="query_div"]/button'))
-    )
-    saved_queries_button.click()
+    driver.execute_script(f"loadQuery('{final_query['query']}')")
+    # sleep(2)
+
+    # element = WebDriverWait(driver, 5).until(
+    #     EC.presence_of_element_located((By.CSS_SELECTOR, r'#query_sideBar > a'))
+    # )
+    # element.click()
+    #
+    # sleep(5)
+    #
+    # driver.execute_script("document.body.style.zoom='100%'")
+
+    # option_type = Select(WebDriverWait(driver, 5).until(
+    #     EC.presence_of_element_located((By.XPATH, r'//*[@id="intervalCmb1"]'))
+    # ))
+
+    # option_type.select_by_visible_text(final_query["interval"])
+
+    # if final_query["interval"] == "Monthly":
+    #     element = Select(WebDriverWait(driver, 5).until(
+    #         EC.presence_of_element_located((By.XPATH, r'//*[@id="wMonthCmb1"]'))
+    #     ))
+    #     element.select_by_visible_text('Current EOM (3rd Friday)')
 
     sleep(1)
-    saved_query = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, f'#{final_query["query"]} > a'))
-    )
-    saved_query.click()
-
-    element = WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, r'#query_sideBar > a'))
-    )
-
-    element.click()
-    sleep(1)
-
-    option_type = Select(WebDriverWait(driver, 5).until(
-        EC.presence_of_element_located((By.XPATH, r'//*[@id="intervalCmb1"]'))
-    ))
-
-    option_type.select_by_visible_text(final_query["interval"])
-
-    if final_query["interval"] == "Monthly":
-        element = Select(WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, r'//*[@id="wMonthCmb1"]'))
-        ))
-        element.select_by_visible_text('Current EOM (3rd Friday)')
-
-    sleep(5)
     for option in options:
 
-        sleep(3)
+        sleep(1)
 
         option_type = Select(WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, r'//*[@id="callPutCmb1"]'))
@@ -209,7 +207,6 @@ def foo(final_query):
 
             while True:
                 try:
-                    sleep(1)
                     driver.switch_to.alert.accept()
                     break
                 except Exception as e:
@@ -220,9 +217,7 @@ def foo(final_query):
             sleep(5)
             print("still downloading")
     sleep(3)
-    driver.close()
     merge_files(file_path)
-
 
 
 @app.route("/file/<filename>")
@@ -234,8 +229,10 @@ def merge_files(path):
     import os
     df_concat = pd.concat([pd.read_csv(os.path.join(path, f)) for f in os.listdir(path)], ignore_index=True)
     df_concat.to_csv(path + "/merged_file.csv", index=False)
+    delete_files(False)
+    webbrowser.open("http://127.0.0.1:7000/file/merged_file.csv")
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port="7000")
+    app.run(host="0.0.0.0", port="7000", debug=True)
 
